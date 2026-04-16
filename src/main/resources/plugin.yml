@@ -1,0 +1,6 @@
+name: XPBank
+version: 1.0
+main: net.killcraft.xpbank.XPBank
+api-version: 1.21
+author: KillCraft_Dev
+description: Erstes Test-Plugin fuer KillCraft.net
