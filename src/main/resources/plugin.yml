@@ -1,6 +1,12 @@
 name: XPBank
-version: 1.0
+version: 1.2
 main: net.killcraft.xpbank.XPBank
 api-version: 1.21
 author: KillCraft_Dev
-description: Erstes Test-Plugin fuer KillCraft.net
+
+commands:
+  xpbank:
+    description: Öffnet die XP-Bank GUI.
+    permission: xpbank.use
+    permission-message: §cDazu hast du keine Rechte! (Benötigt xpbank.use oder OP)
+    
