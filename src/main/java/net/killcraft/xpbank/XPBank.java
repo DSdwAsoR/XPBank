@@ -2,12 +2,14 @@ package net.killcraft.xpbank;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -23,16 +25,15 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
 
     @Override
     public void onEnable() {
-        saveDefaultConfig(); // Erstellt die config.yml falls sie fehlt
+        saveDefaultConfig();
         getCommand("xpbank").setExecutor(this);
         Bukkit.getPluginManager().registerEvents(this, this);
-        getLogger().info("XPBank v1.3 geladen!");
+        getLogger().info("XPBank v1.4 mit Multi-Klick Support geladen!");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) return true;
-
         openBankGUI(player);
         return true;
     }
@@ -42,35 +43,20 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         String uuid = player.getUniqueId().toString();
         int savedLevels = getConfig().getInt("bank." + uuid, 0);
 
-        // Hintergrund mit grauen Glasscheiben füllen
         ItemStack placeholder = createItem(Material.GRAY_STAINED_GLASS_PANE, " ", "");
         for (int i = 0; i < 9; i++) gui.setItem(i, placeholder);
 
-        // Item 1: Einzahlen (Slot 2)
-        gui.setItem(2, createItem(Material.EMERALD, "§a§lEinzahlen", "§7Klicke, um 1 Level einzuzahlen"));
+        // Smaragd mit neuer Lore (Anleitung)
+        gui.setItem(2, createItem(Material.EMERALD, "§a§lEinzahlen", 
+            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlles"));
         
-        // Item 2: Anzeige Guthaben (Slot 4)
         gui.setItem(4, createItem(Material.BOOK, "§6§lDein Guthaben", "§e" + savedLevels + " Level gespeichert"));
 
-        // Item 3: Auszahlen (Slot 6)
-        gui.setItem(6, createItem(Material.EXPERIENCE_BOTTLE, "§e§lAuszahlen", "§7Klicke, um 1 Level abzuheben"));
+        // Flasche mit neuer Lore
+        gui.setItem(6, createItem(Material.EXPERIENCE_BOTTLE, "§e§lAuszahlen", 
+            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlles"));
 
         player.openInventory(gui);
-    }
-
-    private ItemStack createItem(Material mat, String name, String lore) {
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(name);
-            if (!lore.isEmpty()) {
-                List<String> list = new ArrayList<>();
-                list.add(lore);
-                meta.setLore(list);
-            }
-            item.setItemMeta(meta);
-        }
-        return item;
     }
 
     @EventHandler
@@ -81,32 +67,60 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         event.setCancelled(true);
         Player player = (Player) event.getWhoClicked();
         String uuid = player.getUniqueId().toString();
-        int currentBankBalance = getConfig().getInt("bank." + uuid, 0);
+        int currentBank = getConfig().getInt("bank." + uuid, 0);
+        ClickType click = event.getClick();
 
-        // EINZAHLEN
+        // --- EINZAHLEN (Slot 2) ---
         if (event.getSlot() == 2) {
-            if (player.getLevel() >= 1) {
-                player.setLevel(player.getLevel() - 1); // Level beim Spieler abziehen
-                getConfig().set("bank." + uuid, currentBankBalance + 1); // In Datei speichern
+            int amountToSave = 0;
+
+            if (click == ClickType.LEFT) amountToSave = 1;
+            else if (click == ClickType.RIGHT) amountToSave = 10;
+            else if (click == ClickType.SHIFT_LEFT) amountToSave = player.getLevel();
+
+            if (amountToSave > 0 && player.getLevel() >= amountToSave) {
+                player.setLevel(player.getLevel() - amountToSave);
+                getConfig().set("bank." + uuid, currentBank + amountToSave);
                 saveConfig();
-                player.sendMessage("§a1 Level eingezahlt!");
-                openBankGUI(player); // GUI aktualisieren
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
+                player.sendMessage("§a§l+ " + amountToSave + " Level §7eingezahlt.");
+                openBankGUI(player);
             } else {
-                player.sendMessage("§cDu hast keine Level zum Einzahlen!");
+                player.sendMessage("§cDu hast nicht genug Level!");
             }
         }
 
-        // AUSZAHLEN
+        // --- AUSZAHLEN (Slot 6) ---
         if (event.getSlot() == 6) {
-            if (currentBankBalance >= 1) {
-                getConfig().set("bank." + uuid, currentBankBalance - 1); // Von Bank abziehen
+            int amountToGet = 0;
+
+            if (click == ClickType.LEFT) amountToGet = 1;
+            else if (click == ClickType.RIGHT) amountToGet = 10;
+            else if (click == ClickType.SHIFT_LEFT) amountToGet = currentBank;
+
+            if (amountToGet > 0 && currentBank >= amountToGet) {
+                getConfig().set("bank." + uuid, currentBank - amountToGet);
                 saveConfig();
-                player.setLevel(player.getLevel() + 1); // Spieler geben
-                player.sendMessage("§e1 Level ausgezahlt!");
-                openBankGUI(player); // GUI aktualisieren
+                player.setLevel(player.getLevel() + amountToGet);
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
+                player.sendMessage("§e§l- " + amountToGet + " Level §7ausgezahlt.");
+                openBankGUI(player);
             } else {
-                player.sendMessage("§cDeine Bank ist leer!");
+                player.sendMessage("§cDeine Bank hat nicht genug Level!");
             }
         }
+    }
+
+    private ItemStack createItem(Material mat, String name, String... lores) {
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            List<String> list = new ArrayList<>();
+            for (String s : lores) list.add(s);
+            meta.setLore(list);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 }
