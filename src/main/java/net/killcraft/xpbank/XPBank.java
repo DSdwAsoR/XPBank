@@ -46,13 +46,12 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         ItemStack placeholder = createItem(Material.GRAY_STAINED_GLASS_PANE, " ", "");
         for (int i = 0; i < 9; i++) gui.setItem(i, placeholder);
 
-        // Smaragd mit neuer Lore (Anleitung)
+ (Anleitung)
         gui.setItem(2, createItem(Material.EMERALD, "§a§lEinzahlen", 
             "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlles"));
         
-        gui.setItem(4, createItem(Material.BOOK, "§6§lDein Guthaben", "§e" + savedLevels + " Level gespeichert"));
+        gui.setItem(4, createItem(Material.BOOK, "§6§lDein Guthaben", "§e" + savedLevels + " Level 
 
-        // Flasche mit neuer Lore
         gui.setItem(6, createItem(Material.EXPERIENCE_BOTTLE, "§e§lAuszahlen", 
             "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlles"));
 
@@ -70,7 +69,6 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         int currentBank = getConfig().getInt("bank." + uuid, 0);
         ClickType click = event.getClick();
 
-        // --- EINZAHLEN (Slot 2) ---
         if (event.getSlot() == 2) {
             int amountToSave = 0;
 
@@ -90,7 +88,6 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
             }
         }
 
-        // --- AUSZAHLEN (Slot 6) ---
         if (event.getSlot() == 6) {
             int amountToGet = 0;
 
