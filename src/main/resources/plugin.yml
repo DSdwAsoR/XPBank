@@ -2,7 +2,7 @@ name: XPBank
 version: 1.2
 main: net.killcraft.xpbank.XPBank
 api-version: 1.21
-author: KillCraft_Dev
+author: lapure aka dwAsoR
 
 commands:
   xpbank:
