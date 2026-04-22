@@ -28,7 +28,7 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         saveDefaultConfig();
         getCommand("xpbank").setExecutor(this);
         Bukkit.getPluginManager().registerEvents(this, this);
-        getLogger().info("XPBank v1.4 mit Multi-Klick Support geladen!");
+        getLogger().info("XPBank v1.5.4 mit Multi-Klick Support geladen!");
     }
 
     @Override
