@@ -48,7 +48,7 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
 
  (Anleitung)
         gui.setItem(2, createItem(Material.EMERALD, "§a§lEinzahlen", 
-            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlles"));
+            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlle Level"));
         
         gui.setItem(4, createItem(Material.BOOK, "§6§lDein Guthaben", "§e" + savedLevels + " Level "));
 
