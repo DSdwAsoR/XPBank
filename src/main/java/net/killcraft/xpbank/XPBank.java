@@ -1,3 +1,4 @@
+
 package net.killcraft.xpbank;
 
 import org.bukkit.Bukkit;
@@ -26,44 +27,90 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        getCommand("xpbank").setExecutor(this);
+
+        if (getCommand("xpbank") != null) {
+            getCommand("xpbank").setExecutor(this);
+        }
+
         Bukkit.getPluginManager().registerEvents(this, this);
         getLogger().info("XPBank v1.5.4 mit Multi-Klick Support geladen!");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) return true;
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Dieser Befehl kann nur von Spielern benutzt werden.");
+            return true;
+        }
+
+        Player player = (Player) sender;
         openBankGUI(player);
         return true;
     }
 
     public void openBankGUI(Player player) {
         Inventory gui = Bukkit.createInventory(null, 9, GUI_NAME);
+
         String uuid = player.getUniqueId().toString();
         int savedLevels = getConfig().getInt("bank." + uuid, 0);
 
-        ItemStack placeholder = createItem(Material.GRAY_STAINED_GLASS_PANE, " ", "");
-        for (int i = 0; i < 9; i++) gui.setItem(i, placeholder);
+        ItemStack placeholder = createItem(
+                Material.GRAY_STAINED_GLASS_PANE, " ");
 
- (Anleitung)
-        gui.setItem(2, createItem(Material.EMERALD, "§a§lEinzahlen", 
-            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlle Level"));
-        
-        gui.setItem(4, createItem(Material.BOOK, "§6§lDein Guthaben", "§e" + savedLevels + " Level "));
+        for (int i = 0; i < 9; i++) {
+            gui.setItem(i, placeholder);
+        }
 
-        gui.setItem(6, createItem(Material.EXPERIENCE_BOTTLE, "§e§lAuszahlen", 
-            "§7Links: §f1 Level", "§7Rechts: §f10 Level", "§7Shift+Links: §fAlle Level"));
+        // Anleitung
+        gui.setItem(2, createItem(
+                Material.EMERALD,
+                "§a§lEinzahlen",
+                "§7Links: §f1 Level",
+                "§7Rechts: §f10 Level",
+                "§7Shift+Links: §fAlle Level"
+        ));
+
+        gui.setItem(4, createItem(
+                Material.BOOK,
+                "§6§lDein Guthaben",
+                "§e" + savedLevels + " Level"
+        ));
+
+        gui.setItem(6, createItem(
+                Material.EXPERIENCE_BOTTLE,
+                "§e§lAuszahlen",
+                "§7Links: §f1 Level",
+                "§7Rechts: §f10 Level",
+                "§7Shift+Links: §fAlle Level"
+        ));
 
         player.openInventory(gui);
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!event.getView().getTitle().equals(GUI_NAME)) return;
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
+        if (!event.getView().getTitle().equals(GUI_NAME)) {
+            return;
+        }
 
         event.setCancelled(true);
+
+        // Nur Klicks im oberen Bank-Inventar bearbeiten
+        if (event.getClickedInventory() == null
+                || event.getClickedInventory() != event.getView().getTopInventory()) {
+            return;
+        }
+
+        ItemStack clickedItem = event.getCurrentItem();
+
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) {
+            return;
+        }
+
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+
         Player player = (Player) event.getWhoClicked();
         String uuid = player.getUniqueId().toString();
         int currentBank = getConfig().getInt("bank." + uuid, 0);
@@ -72,35 +119,63 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
         if (event.getSlot() == 2) {
             int amountToSave = 0;
 
-            if (click == ClickType.LEFT) amountToSave = 1;
-            else if (click == ClickType.RIGHT) amountToSave = 10;
-            else if (click == ClickType.SHIFT_LEFT) amountToSave = player.getLevel();
+            if (click == ClickType.LEFT) {
+                amountToSave = 1;
+            } else if (click == ClickType.RIGHT) {
+                amountToSave = 10;
+            } else if (click == ClickType.SHIFT_LEFT) {
+                amountToSave = player.getLevel();
+            }
 
             if (amountToSave > 0 && player.getLevel() >= amountToSave) {
                 player.setLevel(player.getLevel() - amountToSave);
+
                 getConfig().set("bank." + uuid, currentBank + amountToSave);
                 saveConfig();
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-                player.sendMessage("§a§l+ " + amountToSave + " Level §7eingezahlt.");
+
+                player.playSound(
+                        player.getLocation(),
+                        Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                        1.0f,
+                        1.0f
+                );
+
+                player.sendMessage(
+                        "§a§l+ " + amountToSave + " Level §7eingezahlt."
+                );
+
                 openBankGUI(player);
             } else {
                 player.sendMessage("§cDu hast nicht genug Level!");
             }
-        }
-
-        if (event.getSlot() == 6) {
+        } else if (event.getSlot() == 6) {
             int amountToGet = 0;
 
-            if (click == ClickType.LEFT) amountToGet = 1;
-            else if (click == ClickType.RIGHT) amountToGet = 10;
-            else if (click == ClickType.SHIFT_LEFT) amountToGet = currentBank;
+            if (click == ClickType.LEFT) {
+                amountToGet = 1;
+            } else if (click == ClickType.RIGHT) {
+                amountToGet = 10;
+            } else if (click == ClickType.SHIFT_LEFT) {
+                amountToGet = currentBank;
+            }
 
             if (amountToGet > 0 && currentBank >= amountToGet) {
                 getConfig().set("bank." + uuid, currentBank - amountToGet);
                 saveConfig();
+
                 player.setLevel(player.getLevel() + amountToGet);
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
-                player.sendMessage("§e§l- " + amountToGet + " Level §7ausgezahlt.");
+
+                player.playSound(
+                        player.getLocation(),
+                        Sound.ENTITY_PLAYER_LEVELUP,
+                        1.0f,
+                        1.0f
+                );
+
+                player.sendMessage(
+                        "§e§l- " + amountToGet + " Level §7ausgezahlt."
+                );
+
                 openBankGUI(player);
             } else {
                 player.sendMessage("§cDeine Bank hat nicht genug Level!");
@@ -111,13 +186,20 @@ public class XPBank extends JavaPlugin implements CommandExecutor, Listener {
     private ItemStack createItem(Material mat, String name, String... lores) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
+
         if (meta != null) {
             meta.setDisplayName(name);
+
             List<String> list = new ArrayList<>();
-            for (String s : lores) list.add(s);
+
+            for (String s : lores) {
+                list.add(s);
+            }
+
             meta.setLore(list);
             item.setItemMeta(meta);
         }
+
         return item;
     }
 }
